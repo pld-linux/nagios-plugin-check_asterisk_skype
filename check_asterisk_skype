@@ -2,6 +2,13 @@
 # 2010 Elan Ruusamäe <glen@delfi.ee>
 # License: GPL v2
 
+# Setup:
+# You need nagios (or nagios nrpe) to have access to asterisk socket.
+# You need to change permissions in [files] section of /etc/asterisk/asterisk.conf
+# and if you run asterisk under asterisk user, you need to add nagios uid to
+# asterisk group (or vice versa: asterisk to nagios group) as asterisk can't
+# change it's user/group after dropping privs.
+
 use strict;
 use Getopt::Long;
 my(%opts);
