@@ -1,0 +1,98 @@
+#!/usr/bin/perl -w
+# 2010 Elan Ruusamäe <glen@delfi.ee>
+# License: GPL v2
+
+use strict;
+use Getopt::Long;
+my(%opts);
+my(%ERRORS) = (OK => 0, WARNING => 1, CRITICAL => 2, UNKNOWN => 3);
+my($VERSION) = '0.1';
+my($message, $status);
+
+#####################################################################
+sub print_usage() {
+	print "Usage: check_asterisk_skype\n";
+	print "       check_raid -v\n";
+	print "       check_raid -h\n";
+}
+
+sub print_help() {
+	print "check_asterisk_skype, v$VERSION\n";
+	print "Copyright (c) 2010 Elan Ruusamäe <glen\@delfi.ee>
+
+This plugin reports the asterisk skype status
+";
+	print_usage();
+}
+
+sub check_skype_license {
+	open(my $fh , "asterisk -rx 'skype show licenses' 2>&1 |") or die $!;
+	my $channels = 0;
+	while (<$fh>) {
+		chomp;
+
+		if (my($file, $key, $expires, $hostid, $channels, $status) = m/
+			File:\s+(\S+)\s+--\s+
+			Key:\s+(\S+)\s+--\s+
+			Expires:\s+([-\d]+)\s+--\s+
+			Host-ID:\s+([\da-f:]+)\s+--\s+
+			Channels:\s+(\d+)\s+\((\S+)\)
+			/x) {
+			$message .= "License $status: $channels channels, expires $expires";
+			if ($status ne 'OK') {
+				$status = $ERRORS{CRITICAL};
+			}
+			next;
+		}
+
+		# This cames from STDERR actually.
+		if (/Unable to connect/) {
+			$status = $ERRORS{CRITICAL};
+			$message .= $_;
+			return;
+		}
+	}
+	close $fh;
+}
+
+#####################################################################
+$ENV{'BASH_ENV'} = '';
+$ENV{'ENV'} = '';
+
+Getopt::Long::Configure('bundling');
+GetOptions(
+	"v" => \$opts{v}, "version" => \$opts{v},
+	"h" => \$opts{h}, "help" => \$opts{h},
+	"d" => \$opts{d}, "debug" => \$opts{d},
+);
+
+if ($opts{v}) {
+	print "check_raid Version $VERSION\n";
+	exit $ERRORS{'OK'};
+}
+if ($opts{h}) {
+	print_help();
+	exit $ERRORS{'OK'};
+}
+
+$status = $ERRORS{OK};
+$message = '';
+
+check_skype_license;
+
+if ($message) {
+	if ($status == $ERRORS{OK}) {
+		print "OK: ";
+	} elsif ($status == $ERRORS{WARNING}) {
+		print "WARNING: ";
+	} elsif ($status == $ERRORS{CRITICAL}) {
+		print "CRITICAL: ";
+	} else {
+		print "UNKNOWN: ";
+	}
+	print "$message\n";
+} else {
+	$status = $ERRORS{UNKNOWN};
+	print "Something went very wrong.\n";
+}
+exit $status;
