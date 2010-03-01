@@ -32,8 +32,8 @@ sub check_skype_license {
 		# child
 		# redirect stderr
 		open STDERR, '>&STDOUT';
-		exec('asterisk', '-rx', 'skype show licenses') or die $!;
-		die("could not execute asterisk");
+		my @CMD = ('asterisk', '-rx', 'skype show licenses');
+		exec @CMD or die "ERROR: Could not execute '@CMD': $!\n";
 
 	} elsif($pid == -1) {
 		die("fork() failed");
@@ -57,8 +57,8 @@ sub check_skype_license {
 			next;
 		}
 
-		# This cames from STDERR actually.
-		if (/Unable to connect/) {
+		# This proceses STDERR messages
+		if (/ERROR:|Unable to connect/) {
 			$status = $ERRORS{CRITICAL};
 			$message .= $_;
 			return;
