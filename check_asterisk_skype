@@ -50,15 +50,15 @@ sub check_skype_license {
 	while (<$fh>) {
 		chomp;
 
-		if (my($file, $key, $expires, $hostid, $channels, $status) = m/
+		if (my($file, $key, $expires, $hostid, $channels, $state) = m/
 			File:\s+(\S+)\s+--\s+
 			Key:\s+(\S+)\s+--\s+
 			Expires:\s+([-\d]+)\s+--\s+
 			Host-ID:\s+([\da-f:]+)\s+--\s+
 			Channels:\s+(\d+)\s+\((\S+)\)
 			/x) {
-			$message .= "License $status: $channels channels, expires $expires";
-			if ($status ne 'OK') {
+			$message .= "License $state: $channels channels, expires $expires";
+			if ($state ne 'OK') {
 				$status = $ERRORS{CRITICAL};
 			}
 			next;
@@ -68,10 +68,62 @@ sub check_skype_license {
 		if (/ERROR:|Unable to connect/) {
 			$status = $ERRORS{CRITICAL};
 			$message .= $_;
-			return;
+			next;
 		}
 	}
 	close $fh || die "asterisk exited with: $?\n";
+}
+
+sub check_skype_user {
+
+	my $pid = open(my $fh, '-|');
+	if ($pid == 0) {
+		# child
+		# redirect stderr
+		open STDERR, '>&STDOUT';
+		my @CMD = ('asterisk', '-rx', 'skype show users');
+		exec @CMD or die "ERROR: Could not execute '@CMD': $!\n";
+
+	} elsif($pid == -1) {
+		die("fork() failed");
+	}
+
+	# parent
+	my $in = 0;
+	my @status;
+	while (<$fh>) {
+		chomp;
+
+		$in = 1,next if /Skype Users/;
+		next unless $in;
+
+		if (my ($user, $state) = /^(\S+):\s+(.*)/) {
+			push(@status, $state);
+			# Connecting to P2P Network => WARNING
+			# Connecting to Server => WARNING
+			# Logged In => OK
+			if ($state ne 'Logged In') {
+				# assume warning
+				$status = $ERRORS{WARNING} unless $status;
+			}
+			next;
+		}
+
+		# This proceses STDERR messages
+		if (/ERROR:|Unable to connect/) {
+			$status = $ERRORS{CRITICAL};
+			$message .= $_;
+			next;
+		}
+	}
+	close $fh || die "asterisk exited with: $?\n";
+
+	if (@status) {
+		$message .= "; User: ".join(', ', @status);
+	} else {
+		$status = $ERRORS{WARNING} unless $status;
+		$message .= "; No skype user setup";
+	}
 }
 
 #####################################################################
@@ -98,6 +150,7 @@ $status = $ERRORS{OK};
 $message = '';
 
 check_skype_license;
+check_skype_user;
 
 if ($message) {
 	if ($status == $ERRORS{OK}) {
