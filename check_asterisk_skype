@@ -26,8 +26,20 @@ This plugin reports the asterisk skype status
 }
 
 sub check_skype_license {
-	open(my $fh , "asterisk -rx 'skype show licenses' 2>&1 |") or die $!;
-	my $channels = 0;
+
+	my $pid = open(my $fh, '-|');
+	if ($pid == 0) {
+		# child
+		# redirect stderr
+		open STDERR, '>&STDOUT';
+		exec('asterisk', '-rx', 'skype show licenses') or die $!;
+		die("could not execute asterisk");
+
+	} elsif($pid == -1) {
+		die("fork() failed");
+	}
+
+	# parent
 	while (<$fh>) {
 		chomp;
 
@@ -52,7 +64,7 @@ sub check_skype_license {
 			return;
 		}
 	}
-	close $fh;
+	close $fh || die "asterisk exited with: $?\n";
 }
 
 #####################################################################
