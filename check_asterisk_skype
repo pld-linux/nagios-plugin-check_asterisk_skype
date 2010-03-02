@@ -102,7 +102,10 @@ sub check_skype_user {
 			# Connecting to P2P Network => WARNING
 			# Connecting to Server => WARNING
 			# Logged In => OK
-			if ($state ne 'Logged In') {
+			# Logged Out => CRITICAL
+			if ($state eq 'Logged Out') {
+				$status = $ERRORS{CRITICAL};
+			} elsif ($state ne 'Logged In') {
 				# assume warning
 				$status = $ERRORS{WARNING} unless $status;
 			}
