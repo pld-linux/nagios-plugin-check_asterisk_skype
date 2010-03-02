@@ -124,7 +124,7 @@ sub check_skype_user {
 	if (@status) {
 		$message .= "; User: ".join(', ', @status);
 	} else {
-		$status = $ERRORS{WARNING} unless $status;
+		$status = $ERRORS{CRITICAL};
 		$message .= "; No skype user setup";
 	}
 }
