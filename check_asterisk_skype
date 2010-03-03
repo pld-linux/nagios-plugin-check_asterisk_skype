@@ -129,6 +129,40 @@ sub check_skype_user {
 	}
 }
 
+# grab skypeout balance from custom log produced in /etc/asterisk/extensions.ael:
+# replace ${SKYPEACCOUNT} with your skype account name
+# Set(DATETIME=${STRFTIME(${EPOCH},Europe/Tallinn,%Y-%m-%d %H:%M:%S)});
+# System(echo '${DATETIME} CALL ENDED: balance: $[${SKYPE_ACCOUNT_PROPERTY(${SKYPEACCOUNT},skypeout_balance)}/100] EUR' >> /var/log/asterisk/calls.log);
+sub check_skype_calls {
+	# TODO: add command line opts support
+	my $logfile = '/var/log/asterisk/calls.log';
+	my $warning = 2.5;
+	my $critical = 0.5;
+
+	open(my $fh, '<', $logfile) or die "Can't open $logfile: $!\n";
+	my @lines = reverse <$fh>;
+	close $fh;
+
+	my $seen = 0;
+	while ($_ = pop(@lines)) {
+		if (my($balance, $currency) = /balance: ([\d.]+) (\S{3})/) {
+			$seen = 1;
+			my $state;
+			if ($balance < $critical) {
+				$state = 'CRITICAL';
+				$status = $ERRORS{CRITICAL};
+			} elsif ($balance < $warning) {
+				$state = 'WARNING';
+				$status = $ERRORS{WARNING};
+			} else {
+				$state = 'OK';
+			}
+			$message .= sprintf "; Balance %s: %.2f %s", $state, $balance, $currency;
+			last;
+		}
+	}
+}
+
 #####################################################################
 $ENV{'BASH_ENV'} = '';
 $ENV{'ENV'} = '';
@@ -154,6 +188,7 @@ $message = '';
 
 check_skype_license;
 check_skype_user;
+check_skype_calls;
 
 if ($message) {
 	if ($status == $ERRORS{OK}) {
