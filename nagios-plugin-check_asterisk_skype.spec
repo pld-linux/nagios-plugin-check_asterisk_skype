@@ -2,13 +2,15 @@
 Summary:	Nagios plugin to check Skype plugin status in Asterisk
 Name:		nagios-plugin-%{plugin}
 Version:	0.1
-Release:	0.1
+Release:	0.2
 License:	GPL v2
 Group:		Networking
 Source0:	%{plugin}
 Source1:	%{plugin}.cfg
 Requires:	nagios-core
 Requires:	perl-base >= 1:5.8.0
+Suggests:	asterisk
+Suggests:	asterisk-skype
 BuildArch:	noarch
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
