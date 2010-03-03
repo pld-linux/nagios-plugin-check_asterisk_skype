@@ -57,7 +57,7 @@ sub check_skype_license {
 			Host-ID:\s+([\da-f:]+)\s+--\s+
 			Channels:\s+(\d+)\s+\((\S+)\)
 			/x) {
-			$message .= "License $state: $channels channels, expires $expires";
+			$message .= "License $state: $channels channels (expires $expires)";
 			if ($state ne 'OK') {
 				$status = $ERRORS{CRITICAL};
 			}
@@ -122,10 +122,10 @@ sub check_skype_user {
 	close $fh || die "asterisk exited with: $?\n";
 
 	if (@status) {
-		$message .= "; User: ".join(', ', @status);
+		$message .= ", User: ".join(', ', @status);
 	} else {
 		$status = $ERRORS{CRITICAL};
-		$message .= "; No skype user setup";
+		$message .= ", No skype user setup";
 	}
 }
 
@@ -136,8 +136,8 @@ sub check_skype_user {
 sub check_skype_calls {
 	# TODO: add command line opts support
 	my $logfile = '/var/log/asterisk/calls.log';
-	my $warning = 2.5;
-	my $critical = 0.5;
+	my $warning = 4.00;
+	my $critical = 2.00;
 
 	open(my $fh, '<', $logfile) or die "Can't open $logfile: $!\n";
 	my @lines = reverse <$fh>;
@@ -157,13 +157,13 @@ sub check_skype_calls {
 			} else {
 				$state = 'OK';
 			}
-			$message .= sprintf "; Balance %s: %.2f %s", $state, $balance, $currency;
+			$message .= sprintf ", Balance %s: %.2f %s", $state, $balance, $currency;
 			last;
 		}
 	}
 
 	if (!$seen) {
-		$message .= "; Balance UNKNOWN: No info found";
+		$message .= ", Balance UNKNOWN: No info found";
 		$status = $ERRORS{UNKNOWN} unless $status;
 	}
 }
