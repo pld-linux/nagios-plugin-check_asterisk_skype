@@ -35,15 +35,15 @@ This plugin reports the asterisk skype status
 sub check_skype_license {
 
 	my $pid = open(my $fh, '-|');
-	if ($pid == 0) {
+	if (not defined $pid) {
+		die("fork() failed: $!");
+	} elsif ($pid == 0) {
 		# child
 		# redirect stderr
 		open STDERR, '>&STDOUT';
 		my @CMD = ('asterisk', '-rx', 'skype show licenses');
-		exec @CMD or die "ERROR: Could not execute '@CMD': $!\n";
-
-	} elsif($pid == -1) {
-		die("fork() failed");
+		exec @CMD;
+		die "ERROR: Could not execute '@CMD': $!\n";
 	}
 
 	# parent
@@ -77,15 +77,15 @@ sub check_skype_license {
 sub check_skype_user {
 
 	my $pid = open(my $fh, '-|');
-	if ($pid == 0) {
+	if (not defined $pid) {
+		die("fork() failed: $!");
+	} elsif ($pid == 0) {
 		# child
 		# redirect stderr
 		open STDERR, '>&STDOUT';
 		my @CMD = ('asterisk', '-rx', 'skype show users');
-		exec @CMD or die "ERROR: Could not execute '@CMD': $!\n";
-
-	} elsif($pid == -1) {
-		die("fork() failed");
+		exec @CMD;
+		die "ERROR: Could not execute '@CMD': $!\n";
 	}
 
 	# parent
