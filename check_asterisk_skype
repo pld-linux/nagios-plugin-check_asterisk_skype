@@ -136,8 +136,8 @@ sub check_skype_user {
 sub check_skype_calls {
 	# TODO: add command line opts support
 	my $logfile = '/var/log/asterisk/calls.log';
-	my $warning = 4.00;
-	my $critical = 2.00;
+	my $warning = 2.00
+	my $critical = 1.50;
 
 	open(my $fh, '<', $logfile) or die "Can't open $logfile: $!\n";
 	my @lines = reverse <$fh>;
